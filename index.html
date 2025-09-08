@@ -33,11 +33,8 @@
 <script src="game.js" nonce="fXbPLqjXr3k5ALRtf-ZFZQ"></script>
 <script nonce="fXbPLqjXr3k5ALRtf-ZFZQ">window.addEventListener("load", () => {
     window.runGame();
-    // Dev helper: show a tap-to-unlock overlay when not on YouTube and audio may be locked
-    try {
-        const isDev = /(?:[?&])forceAudio=1(?:&|$)/.test(location.search) ||
-            location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/i.test(location.hostname);
-        if (isDev) {
+        // Always show a tap-to-unlock overlay on first load unless audio is already unlocked
+        try {
             const overlay = document.createElement('div');
             overlay.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);color:#fff;font:600 18px/1.4 system-ui,Segoe UI,Arial;z-index:9999;';
             overlay.textContent = 'Tap to enable sound';
@@ -45,8 +42,7 @@
             overlay.addEventListener('pointerdown', remove, { once: true });
             overlay.addEventListener('click', remove, { once: true });
             document.body.appendChild(overlay);
-        }
-} catch (e) { /* noop */ }
+        } catch (e) { /* noop */ }
 });</script>
 </head>
 
