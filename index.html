@@ -48,45 +48,6 @@
         }
 } catch (e) { /* noop */ }
 });</script>
-
-        // Attempt to unlock sound automatically
-        (async function unlockSound() {
-            try {
-                const ctx = window.AudioContext ? new window.AudioContext() : (window.webkitAudioContext ? new window.webkitAudioContext() : null);
-                if (ctx) {
-                    // Create silent buffer and play it
-                    const buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
-                    const source = ctx.createBufferSource();
-                    source.buffer = buffer;
-                    source.connect(ctx.destination);
-                    source.start(0);
-                    // Resume context if needed
-                    if (ctx.state === 'suspended') await ctx.resume();
-                    // If unlocked, don't show overlay
-                    window._audioUnlocked = true;
-                }
-            } catch (e) {
-                window._audioUnlocked = false;
-            }
-        })();
-
-        // Dev helper: show a tap-to-unlock overlay when not on YouTube and audio may be locked
-        try {
-            const isDev = /(?:[?&])forceAudio=1(?:&|$)/.test(location.search) ||
-                location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/i.test(location.hostname);
-            setTimeout(() => {
-                if (isDev && !window._audioUnlocked) {
-                    const overlay = document.createElement('div');
-                    overlay.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);color:#fff;font:600 18px/1.4 system-ui,Segoe UI,Arial;z-index:9999;';
-                    overlay.textContent = 'Tap to enable sound';
-                    const remove = () => overlay.remove();
-                    overlay.addEventListener('pointerdown', remove, { once: true });
-                    overlay.addEventListener('click', remove, { once: true });
-                    document.body.appendChild(overlay);
-                }
-            }, 500); // Wait for unlock attempt
-        } catch (e) { /* noop */ }
-    });</script>
 </head>
 
 <body>
