@@ -14,15 +14,51 @@
     <meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0, initial-scale=1.0, user-scalable=no, minimal-ui"/>
     <meta charset="utf-8"/>
 
-    <link rel="stylesheet" type="text/css" href="style/index.css" nonce="k9ssyCk1QydlTwh4ZE6KbQ"/>
+    <link rel="stylesheet" type="text/css" href="style/index.css" nonce="fXbPLqjXr3k5ALRtf-ZFZQ"/>
 
-    <script src="https://www.youtube.com/game_api/v1" nonce="k9ssyCk1QydlTwh4ZE6KbQ"></script>
-<script src="game.js" nonce="k9ssyCk1QydlTwh4ZE6KbQ"></script>
-<script nonce="k9ssyCk1QydlTwh4ZE6KbQ">window.addEventListener("load", () => window.runGame());</script>
+        <script src="https://www.youtube.com/game_api/v1" nonce="fXbPLqjXr3k5ALRtf-ZFZQ"></script>
+    <!-- Google Identity Services (loaded dynamically below when a client ID is provided) -->
+    <script nonce="fXbPLqjXr3k5ALRtf-ZFZQ">window.GOOGLE_CLIENT_ID = '467225574317-ftdf9qf93ih9on6a1p4pa97667mr7ekf.apps.googleusercontent.com';</script>
+        <!-- Firebase (compat) for easy integration; fill FIREBASE_CONFIG below -->
+        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" nonce="fXbPLqjXr3k5ALRtf-ZFZQ"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" nonce="fXbPLqjXr3k5ALRtf-ZFZQ"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js" nonce="fXbPLqjXr3k5ALRtf-ZFZQ"></script>
+        <script nonce="fXbPLqjXr3k5ALRtf-ZFZQ">
+
+        </script>
+    <!-- Progress persistence shim: mirrors platform storage to localStorage for reliable saves locally -->
+    <script src="scripts/progress_persist.js" nonce="fXbPLqjXr3k5ALRtf-ZFZQ"></script>
+    <!-- Google Sign-In integration (uses GOOGLE_CLIENT_ID if provided) -->
+    <script src="scripts/google_signin.js" nonce="fXbPLqjXr3k5ALRtf-ZFZQ"></script>
+<script src="game.js" nonce="fXbPLqjXr3k5ALRtf-ZFZQ"></script>
+<script nonce="fXbPLqjXr3k5ALRtf-ZFZQ">window.addEventListener("load", () => {
+    window.runGame();
+    // Dev helper: show a tap-to-unlock overlay when not on YouTube and audio may be locked
+    try {
+        const isDev = /(?:[?&])forceAudio=1(?:&|$)/.test(location.search) ||
+            location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/i.test(location.hostname);
+        if (isDev) {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);color:#fff;font:600 18px/1.4 system-ui,Segoe UI,Arial;z-index:9999;';
+            overlay.textContent = 'Tap to enable sound';
+            const remove = () => overlay.remove();
+            overlay.addEventListener('pointerdown', remove, { once: true });
+            overlay.addEventListener('click', remove, { once: true });
+            document.body.appendChild(overlay);
+        }
+} catch (e) { /* noop */ }
+});</script>
 </head>
 
-
 <body>
-    <div id="game"></div>
+        <div id="game"></div>
+        <div id="auth" style="position:fixed;top:10px;right:10px;z-index:9999;display:flex;gap:8px;align-items:center;">
+            <div id="gsi_button"></div>
+            <div id="user_info" style="display:none;gap:6px;align-items:center;font:500 12px system-ui,Segoe UI,Arial;color:#fff;background:rgba(0,0,0,0.4);padding:4px 8px;border-radius:12px;">
+                <img id="user_pic" src="" alt="" style="width:18px;height:18px;border-radius:50%;object-fit:cover;"/>
+                <span id="user_name"></span>
+                <button id="signout_btn" style="margin-left:6px;padding:2px 6px;font:600 11px system-ui;cursor:pointer;">Sign out</button>
+            </div>
+        </div>
 </body>
 </html>
