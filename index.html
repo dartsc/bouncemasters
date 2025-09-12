@@ -32,17 +32,60 @@
     <script src="scripts/google_signin.js" nonce="fXbPLqjXr3k5ALRtf-ZFZQ"></script>
 <script src="game.js" nonce="fXbPLqjXr3k5ALRtf-ZFZQ"></script>
 <script nonce="fXbPLqjXr3k5ALRtf-ZFZQ">window.addEventListener("load", () => {
-    window.runGame();
-        // Always show a tap-to-unlock overlay on first load unless audio is already unlocked
+    try { window.runGame && window.runGame(); } catch(_) {}
+
+    // Simple, robust audio unlock routine (no external files)
+    (function(){
+        if (window.__audioUnlockInstalled) return; window.__audioUnlockInstalled = true;
+        let unlocked = !!window.__audioUnlocked;
+        let createdCtx = null;
+
+        function resume(p){ try{ if (p && typeof p.then==='function') return p.catch(()=>{});}catch(_){} return Promise.resolve(); }
+        function resumeKnownLibs(){
+            const tasks = [];
+            try { if (window.Howler && Howler.ctx && Howler.ctx.resume) tasks.push(resume(Howler.ctx.resume())); if (window.Howler && typeof Howler.mute==='function') Howler.mute(false); } catch(_){}
+            try { const ps = window.PIXI && window.PIXI.sound; const pctx = ps && (ps.context && (ps.context.audioContext||ps.context)); if (pctx && pctx.resume) tasks.push(resume(pctx.resume())); if (ps && typeof ps.unmute==='function') ps.unmute(); } catch(_){}
+            try { const g = window.game || window.__phaserGame || (window.Phaser && window.Phaser.GAMES && window.Phaser.GAMES[0]); const snd = g && g.sound; const actx = (snd && snd.context) || (g && g.sys && g.sys.game && g.sys.game.audioContext); if (actx && actx.resume) tasks.push(resume(actx.resume())); if (snd && typeof snd.unlock==='function') snd.unlock(); } catch(_){}
+            try { const any = window.__globalAudioCtx || window.__audioCtx || window.audioContext; if (any && any.resume) tasks.push(resume(any.resume())); } catch(_){}
+            return Promise.all(tasks).then(()=>{});
+        }
+        function playSilentWebAudio(){
+            try {
+                const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return Promise.resolve(false);
+                createdCtx = createdCtx || new AC(); window.__globalAudioCtx = createdCtx; const ctx = createdCtx;
+                if (ctx.state === 'suspended' && ctx.resume) return ctx.resume().then(()=>true,()=>false);
+                const buf = ctx.createBuffer(1,1,22050); const src = ctx.createBufferSource(); src.buffer = buf; src.connect(ctx.destination); try{src.start(0);}catch(_){/*noop*/}
+                if (ctx.state === 'suspended' && ctx.resume) return ctx.resume().then(()=>true,()=>false);
+                return Promise.resolve(true);
+            } catch(_) { return Promise.resolve(false); }
+        }
+        function playSilentHtmlAudio(){
+            try {
+                const SILENT = 'data:audio/mp3;base64,//uQZAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCA/////wAAAAC4AU9wZW5Tb3VuZAAAAAAA';
+                const a = new Audio(); a.src = SILENT; a.loop = false; a.volume = 0.01; const p = a.play();
+                if (p && typeof p.then==='function') return p.then(()=>{try{a.pause();}catch(_){ } return true;}, ()=>false);
+                return Promise.resolve(true);
+            } catch(_) { return Promise.resolve(false); }
+        }
+        function markUnlocked(){ if (unlocked) return; unlocked = true; try{window.__audioUnlocked = true;}catch(_){} try{window.dispatchEvent(new Event('audio:unlocked'));}catch(_){} }
+        function ensure(){ if (unlocked) return Promise.resolve(true); return resumeKnownLibs().then(playSilentWebAudio).then(()=>playSilentHtmlAudio()).then(()=>{ markUnlocked(); return true; }).catch(()=>unlocked); }
+
+        // Overlay shown only until first gesture
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);color:#fff;font:600 16px system-ui,Segoe UI,Arial;z-index:9999;user-select:none;';
+        overlay.innerHTML = '<div style="text-align:center;padding:14px 20px;background:rgba(0,0,0,.35);border-radius:12px;backdrop-filter:blur(2px)">Tap to enable sound<br><span style="opacity:.85;font-weight:500;font-size:13px">We\'ll remember</span></div>';
+        function unlockAndClose(){ ensure(); try{ overlay.remove(); }catch(_){} cleanup(); }
+        function cleanup(){ window.removeEventListener('pointerdown', unlockAndClose, true); window.removeEventListener('keydown', unlockAndClose, true); }
+
         try {
-            const overlay = document.createElement('div');
-            overlay.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);color:#fff;font:600 18px/1.4 system-ui,Segoe UI,Arial;z-index:9999;';
-            overlay.textContent = 'Tap to enable sound';
-            const remove = () => overlay.remove();
-            overlay.addEventListener('pointerdown', remove, { once: true });
-            overlay.addEventListener('click', remove, { once: true });
-            document.body.appendChild(overlay);
-        } catch (e) { /* noop */ }
+            if (!unlocked) {
+                document.body.appendChild(overlay);
+                window.addEventListener('pointerdown', unlockAndClose, { once:true, capture:true });
+                window.addEventListener('keydown', unlockAndClose, { once:true, capture:true });
+                window.addEventListener('audio:unlocked', () => { try{ overlay.remove(); }catch(_){} cleanup(); }, { once:true });
+            }
+        } catch(_) {}
+    })();
 });</script>
 </head>
 
